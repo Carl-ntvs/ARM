@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="shortcut icon" href="IMG_0254.jpg" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <title>神人egg</title>
+</head>
+<body>
+<header>
+    <div class="menu">
+        <nav>
+            <label for="count">題目數量</label>
+            <select name="" id="count">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="80">80</option>
+            </select>
+            <button onclick="start()">抽題</button>
+            <button onclick="resetProgress()">清空紀錄</button>
+        </nav>
+        <div id="btn">
+        </div>
+    </div>
+</header>
+<main>
+            <div id="progress"></div>
+    <div class="hero">
+    </div>
+</main>
+<footer>
+    <div class="footer">
+            <div>鍵盤1,2,3,4可以選答案，左右鍵可以換題</div>
+    </div>
+</footer>
+</body>
+<script>
+    let allData = [];
+    let count = 10;
+    let currentPage = 0;
+    let problems = [];
+    let word={
+        1:"A."+"&nbsp;&nbsp;",
+        2:"B."+"&nbsp;&nbsp;",
+        3:"C."+"&nbsp;&nbsp;",
+        4:"D."+"&nbsp;&nbsp;"
+    }
+    let masteredIds=JSON.parse(localStorage.getItem('masteredIds')||'[]');
+
+    const updateProgress = () => {
+        const total = allData.length;
+        const masteredCount = masteredIds.length;
+        const progressDiv = document.getElementById('progress');
+        if (total > 0) {
+            const percentage = ((masteredCount / total) * 100).toFixed(1);
+                        progressDiv.innerHTML = `已答對過: ${masteredCount}題 / ${total} (${percentage}%)<span style="color: transparent;cursor: default">這是一個神人彩蛋，望周知網頁是最簡單的競賽</span>`;
+        }
+    };
+    const resetProgress=()=>{
+        if (confirm('確認清除所有以作答正確題目紀錄?')){
+            if (confirm('不是手殘?')){
+            localStorage.removeItem('masteredIds')
+            masteredIds=[];
+            alert('已重製，所以題目都會重新被抽到，包括之前所答對的');
+            updateProgress()
+            }
+        }
+    }
+    const select = document.getElementById('count');
+    const btn = document.getElementById('btn');
+    select.addEventListener('change', (e) => {
+        count = e.target.value
+        problems = []
+    });
+    (async () => {
+        const res = await fetch('questions.json')
+        allData = await res.json();
+        updateProgress();
+    })();
+    const start = () => {
+        submit=false
+        masteredIds = JSON.parse(localStorage.getItem('masteredIds') || '[]');
+
+        currentPage = 0;
+        problems = [];
+        const labelDate=allData.filter(q=>!masteredIds.includes(q.id));
+        if (labelDate.length===0){
+            alert('我去你他媽寫了649題');
+            return
+        }
+        const shuffled = [...labelDate].sort(() => Math.random() - 0.5);
+        const countToTake=Math.min(Number(count),labelDate.length);
+        problems = shuffled.slice(0, countToTake).map(q => {
+            let optionWithStatus=q.options.map((text,idx)=>({
+                text:text,
+                isCorrect:(idx+1===q.answer)
+            }));
+            optionWithStatus.sort(()=>Math.random()-0.5);
+            return{
+                ...q,
+                userAnswer:null,
+                shuffledOptions:optionWithStatus
+            }
+        })
+        create();
+    }
+    const render=()=>{
+        const q=problems[currentPage];
+        const hero=document.querySelector('.hero');
+
+        const isImageMode=q.isImageOptions===true;
+        const optionHTML = q.shuffledOptions.map((opt, index) => {
+            const displayContent = isImageMode
+                ? `<img src="${opt.text}" style="max-width:150px; display:block;">`
+                : opt.text;
+            return `
+        <label style="display:block; margin:10px 0; border:1px solid #ddd; padding:10px;">
+            <input type="radio" name="answer" value="${index}"
+               ${q.userAnswer === index ? 'checked' : ''}
+               onchange="saveAnswer(${index})">
+            ${word[index + 1]} ${displayContent}
+        </label>`;
+        }).join('');
+        hero.innerHTML = `
+         <p>${currentPage + 1}. ${q.question}</p>
+         ${q.image_url ? `<img src="${q.image_url}" style="max-width:300px; display:block; margin-bottom:10px;" onerror="this.style.display='none';">` : ''}
+         <div class="options-container">${optionHTML}</div>
+    `;
+        document.querySelector('#btn select').value=currentPage+1;
+    }
+    const saveAnswer=(index)=>{
+        problems[currentPage].userAnswer=index;
+    }
+    const create = () => {
+        btn.innerHTML = `
+        <button onclick="prev()">上一題</button>
+        <button onclick="next()">下一題</button>
+        <button onclick="submitExam()">交卷</button>
+        <button onclick="exportToDocx()">匯出word</button>
+`;
+        const select=document.createElement('select')
+        const label=document.createElement('label');
+        label.textContent='選擇題目'
+        for (let i = 1; i <= problems.length; i++) {
+            const option=document.createElement('option')
+            option.value=i;
+            option.textContent=i
+            select.appendChild(option);
+        }
+        btn.appendChild(label)
+        btn.appendChild(select)
+        select.addEventListener('change',(e)=>{
+            currentPage=e.target.value-1;
+            render()
+        })
+        render()
+    }
+        window.addEventListener('keydown',(e)=>{
+            if (problems.length===0)return;
+            if (e.key==='ArrowRight'){
+                next()
+            }else if(e.key==="ArrowLeft"){
+                prev()
+            }else if (['1','2','3','4'].includes(e.key)){
+                const index=parseInt(e.key)-1;
+                saveAnswer(index);
+                render()
+            }
+        })
+    const next=()=>{
+        if (submit)return
+        if (currentPage<problems.length-1){
+            currentPage++;
+            render()
+        }
+    }
+    const prev=()=>{
+        if (submit)return
+        if (currentPage>0){
+            currentPage--
+            render()
+        }
+    }
+    let submit=false;
+    const submitExam=()=>{
+        if (!confirm('答完了嗎就交卷?'))return
+        let correctCount=0;
+        let newlyMastered=[];
+        problems.forEach(q=>{
+            if (q.userAnswer!==null&&q.shuffledOptions[q.userAnswer].isCorrect){
+                correctCount++;
+                if (!masteredIds.includes(q.id)){
+                    masteredIds.push(q.id);
+                    newlyMastered.push(q.id);
+                }
+            }
+        })
+        localStorage.setItem('masteredIds',JSON.stringify(masteredIds))
+        updateProgress()
+        const hero=document.querySelector('.hero');
+        let reviewHTML=`
+        <div class="result-page">
+            <h2>測驗結果：${correctCount} / ${problems.length} 題</h2>
+            <hr>
+        `
+        problems.forEach((q,qIndex)=>{
+            const isImageMode = q.isImageOptions === true;
+            let userSelectedText = "未作答";
+            if (q.userAnswer !== null) {
+                const selectedOpt = q.shuffledOptions[q.userAnswer];
+                const optionLetter = word[q.userAnswer + 1].replace(/&nbsp;/g, '').trim(); // 取得 A./B./C./D.
+                const content = isImageMode 
+                    ? `<img src="${selectedOpt.text}" style="max-width:100px; display:inline-block; vertical-align:middle;">` 
+                    : selectedOpt.text;
+                userSelectedText = `${optionLetter} ${content}`;
+            }
+            const optionsHTML=q.shuffledOptions.map((opt,optIndex)=>{
+                let style='';
+                if (opt.isCorrect)style='background-color: #d4edda; color: #155724; font-weight: bold;'
+                else if (q.userAnswer===optIndex)style='background-color: #f8d7da; color: #721c24;'
+                const displayContent = isImageMode
+                    ? `<img src="${opt.text}" style="max-width:150px; display:block;">`
+                    : opt.text;
+                return `<div style="padding: 5px; margin: 2px; ${style}">
+                ${word[optIndex + 1]}. ${displayContent}
+                ${opt.isCorrect ? '(正確答案)' : ''}
+            </div>`;
+            }).join('');
+            reviewHTML += `
+            <div class="review-item" style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px;">
+                <p><strong>${qIndex + 1}. ${q.question}</strong></p>
+                ${q.image_url ? `<img src="${q.image_url}" style="max-width:200px;">` : ''}
+                <p style="margin: 8px 0; font-size: 15px;"><strong>你的答案：</strong> ${userSelectedText}</p>
+                <div>${optionsHTML}</div>
+            </div>
+        `;
+        });
+        reviewHTML+=`</div>`
+        hero.innerHTML=reviewHTML;
+        btn.innerHTML='';
+        submit=true;
+    }
+    // 輔助函式：載入圖片並按指定最大寬度（maxWidth）進行等比例縮圖
+    const getBase64Image = async (imgUrl, maxWidth = 150) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.src = imgUrl;
+
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                // 超過指定寬度時進行等比例縮小
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // 轉成 Base64（品質 0.85）
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+            };
+
+            img.onerror = () => {
+                console.error("圖片載入失敗:", imgUrl);
+                resolve(null);
+            };
+        });
+    };
+
+    const exportToDocx = async () => {
+        let htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body { font-family: 'Microsoft JhengHei', sans-serif; line-height: 1.5; font-size: 14px; }
+            h2 { color: #333; font-size: 18px; }
+            .review-item {padding-bottom: 3px; margin-bottom: 3px; }
+            .correct { color: #155724; font-weight: bold; }
+            .user-ans { color: #0056b3; }
+            .option { margin-left: 10px; margin-top: 4px; }
+            /* 控制 Word 內的圖片顯示尺寸 */
+            .q-img { max-width: 200px; height: auto; display: block; margin: 6px 0; }
+            .opt-img { max-width: 100px; height: auto; display: inline-block; vertical-align: middle; margin: 4px 0; }
+           .page-break { page-break-before: always; }
+            .answer-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+            .answer-table td {
+                width: 10%;
+                border: 1px solid #999;
+                padding: 6px 4px;
+                text-align: center;
+                font-size: 13px;
+            }
+        </style>
+    </head>
+    <body>
+        <p style="margin: 0;margin-bottom:1px; "><strong>總題數：</strong>${problems.length} 題</p>
+        <hr>
+    `;
+        const answerKeyList = [];
+
+        for (let qIndex = 0; qIndex < problems.length; qIndex++) {
+            const q = problems[qIndex];
+            const isImageMode = q.isImageOptions === true;
+            //尋找正確答案
+            let correctAnswerLetter = '';
+            for (let optIdx = 0; optIdx < q.shuffledOptions.length; optIdx++) {
+                if (q.shuffledOptions[optIdx].isCorrect) {
+                    correctAnswerLetter = word[optIdx + 1].replace(/&nbsp;/g, '').replace('.', '').trim();
+                    break;
+                }
+            }
+            answerKeyList.push(`${qIndex + 1}: ${correctAnswerLetter}`);
+            // 題目圖片限制最大寬度 200px
+            let questionImgTag = '';
+            if (q.image_url) {
+                const qImgBase64 = await getBase64Image(q.image_url, 200);
+                if (qImgBase64) {
+                    questionImgTag = `<br><img src="${qImgBase64}" class="q-img">`;
+                }
+            }
+
+            // 處理選項（選項圖片限制最大寬度 100px）
+            let optionsListHTML = '';
+            for (let optIdx = 0; optIdx < q.shuffledOptions.length; optIdx++) {
+                const opt = q.shuffledOptions[optIdx];
+                const letter = word[optIdx + 1].replace(/&nbsp;/g, '').trim();
+
+                let optDisplay = opt.text;
+                if (isImageMode) {
+                    const optImgBase64 = await getBase64Image(opt.text, 100);
+                    optDisplay = optImgBase64 ? `<img src="${optImgBase64}" class="opt-img">` : '[圖片載入失敗]';
+                }
+                optionsListHTML += `(${letter}) ${optDisplay}`+"&nbsp;&nbsp;";
+            }
+
+            htmlContent += `
+            <div class="review-item">
+<!--            題目-->
+                <p style="margin: 0"><strong>${qIndex + 1}. ${q.question}</strong>${questionImgTag}</p>
+<!--                選項-->
+                <div>${optionsListHTML}</div>
+            </div>
+        `;
+        }
+        htmlContent += `
+        <div class="page-break"></div>
+        <h2>答案對照表</h2>
+        <table class="answer-table">
+            <tbody>
+        `;
+        for (let i = 0; i < answerKeyList.length; i += 10) {
+            htmlContent += '<tr>';
+            for (let j = 0; j <10; j++) {
+                const item = answerKeyList[i + j];
+                if (item) {
+                    htmlContent += `<td><strong>${item}</strong></td>`;
+                } else {
+                    htmlContent += '<td></td>'; // 不滿 5 個時補空格欄位
+                }
+            }
+            htmlContent += '</tr>';
+        }
+        htmlContent += `
+            </tbody>
+        </table>
+        </body></html>
+        `;
+
+        const converted = htmlDocx.asBlob(htmlContent);
+        saveAs(converted, `測驗_${new Date().toISOString().slice(0, 10)}.docx`);
+    };
+</script>
+</html>
