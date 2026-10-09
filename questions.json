@@ -6583,10 +6583,10 @@
     "question": "LabVIEW 的預設目錄為下列何者圖示？",
     "image_url": "images/q507.png",
     "options": [
-      "images/q507_A.png",
-      "images/q507_B.png",
-      "images/q507_C.png",
-      "images/q507_D.png"
+      "images/q506_A.png",
+      "images/q506_B.png",
+      "images/q506_C.png",
+      "images/q506_D.png"
     ],
     "isImageOptions": true
   },
@@ -6596,10 +6596,10 @@
     "question": "Vi.lib 的預設目錄為下列何者圖示？",
     "image_url": "images/q508.png",
     "options": [
-      "images/q508_A.png",
-      "images/q508_B.png",
-      "images/q508_C.png",
-      "images/q508_D.png"
+      "images/q506_A.png",
+      "images/q506_B.png",
+      "images/q506_C.png",
+      "images/q506_D.png"
     ],
     "isImageOptions": true
   },
