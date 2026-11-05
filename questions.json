@@ -2147,28 +2147,28 @@
   {
     "id": 166,
     "answer": 2,
-    "question": "兩彈簧之彈簧常數分別為 k1、k2，經並聯後之總彈簧常數為？ 1 1 k1k2",
+    "question": "兩彈簧之彈簧常數分別為 k1、k2，經並聯後之總彈簧常數為？",
     "image_url": "images/q166.png",
     "options": [
-      "k1 × k2",
-      "k1 ＋ k2",
-      "k1 + k2",
-      "k1+ k2。"
+      "images/q166_A.png",
+      "images/q166_B.png",
+      "images/q166_C.png",
+      "images/q166_D.png"
     ],
-    "isImageOptions": false
+    "isImageOptions": true
   },
   {
     "id": 167,
     "answer": 4,
-    "question": "兩彈簧之彈簧常數分別為 k1、k2，經串聯後之總彈簧常數為？ 1 1 k1k2",
+    "question": "兩彈簧之彈簧常數分別為 k1、k2，經串聯後之總彈簧常數為？",
     "image_url": "images/q167.png",
     "options": [
-      "k1 × k2",
-      "k1 ＋ k2",
-      "k1 + k2",
-      "k1+ k2。"
+      "images/q166_A.png",
+      "images/q166_B.png",
+      "images/q166_C.png",
+      "images/q166_D.png"
     ],
-    "isImageOptions": false
+    "isImageOptions": true
   },
   {
     "id": 168,
@@ -6493,7 +6493,7 @@
     "image_url": "images/q500.png",
     "options": [
       "images/q496_A.png",
-      "images/q500_B.png",
+      "images/q500Z_B.png",
       "images/q496_C.png",
       "images/q496_D.png"
     ],
